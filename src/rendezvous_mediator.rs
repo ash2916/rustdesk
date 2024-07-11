@@ -75,7 +75,7 @@ impl RendezvousMediator {
             crate::test_nat_type();
             nat_tested = true;
         }
-        if !Config::get_option("stop-service").is_empty() {
+        if config::option2bool("stop-service", &Config::get_option("stop-service")) {
             crate::test_rendezvous_server();
         }
         let server_cloned = server.clone();
@@ -96,7 +96,7 @@ impl RendezvousMediator {
         loop {
             let conn_start_time = Instant::now();
             *SOLVING_PK_MISMATCH.lock().await = "".to_owned();
-            if Config::get_option("stop-service").is_empty()
+            if !config::option2bool("stop-service", &Config::get_option("stop-service"))
                 && !crate::platform::installing_service()
             {
                 if !nat_tested {
@@ -392,7 +392,10 @@ impl RendezvousMediator {
         } else {
             false
         };
-        if (cfg!(debug_assertions) && option_env!("TEST_TCP").is_some()) || is_http_proxy {
+        if (cfg!(debug_assertions) && option_env!("TEST_TCP").is_some())
+            || is_http_proxy
+            || Config::get_option(config::keys::OPTION_DISABLE_UDP) == "Y"
+        {
             Self::start_tcp(server, host).await
         } else {
             Self::start_udp(server, host).await
